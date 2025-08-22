@@ -1,72 +1,48 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "include/stack.h"
-#include "include/operations.h"
 
-typedef struct {
-    char * signal;
-    float (*operation_func)(float, float);
-} OPERATION;
+#include "include/stack.h"
+#include "include/tokens.h"
 
 void process_tokens(char *tokens);
-int get_num();
 
-OPERATION operations[] = {
-    {"+", sum},
-    {"-", sub},
-    {"*", mult},
-    {"/", divi},
-    {"root", root},
-    {"^", power}
-};
+void change_decimal();
+
+int precision = 2;
+char format[16];
 
 int main(void){
-    char input[100];
+    char input[100]; 
 
-    fgets(input, sizeof(input), stdin);
-    process_tokens(input);
-    
-    printf("Resultado: %f\n", pop());
+    change_decimal();
+
+    while(fgets(input, sizeof(input), stdin) != NULL && strcmp(input, "q\n") != 0){
+        
+        if(strncmp(input, "decimal ", 8) == 0){
+            int new_precision;
+            if (sscanf(input + 8, "%d", &new_precision) == 1) {
+                if(new_precision < 0){
+                    printf("Nova precisão inválida.\n");
+                    continue;
+                }
+                precision = new_precision;
+                printf("Precisão alterada para: %d\n", precision);
+                change_decimal();
+                continue; // pula para próxima iteração do loop
+            }
+            printf("Nova precisão inválida.\n");
+            continue;
+        }
+
+        process_tokens(input);
+        printf(format, pop());
+    }
+
+    printf("Bye!\n");
     return 0;
 }
 
-void process_tokens(char *tokens){
-    char * token = strtok(tokens, " \n");
-    while (token != NULL){
-        if(token[0] >= '0' && token[0] <= '9'){
-            /* -- Identifica um número --*/
-            int num = atoi(token);
-            printf("> %d\n", num);
-            push(num);
-        }else if(token[0] == '-' && token[1] >= '0' && token[1] <= '9'){
-            /* -- Verifica por número negativo --*/
-            int num = atoi(token);
-            printf("> %d\n", num);
-            push(num);
-        }else{
-            /* -- Identifica uma operação --*/
-            float num2 = get_num();
-            float num1 = get_num();
-            
-            for(int i = 0; i < sizeof(operations); i++){
-                if(strcmp(operations[i].signal, token) == 0){
-                    float result = operations[i].operation_func(num1, num2);
-                    push(result);
-                    break;
-                }
-            }
-
-        }
-        token = strtok(NULL, " \n");
-    }
-}
-
-int get_num(){
-    if(is_empty()){
-        printf("Número de elementos invalidos.\n");
-        exit(0);
-    }else{
-        return pop();
-    }
+void change_decimal(){
+    sprintf(format, "= %%.%df\n", precision);
 }
